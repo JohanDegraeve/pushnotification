@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:View xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		creationComplete="onCreationComplete()"
+		xmlns:s="library://ns.adobe.com/flex/spark" title="PushNotification">
+
+	<fx:Script>
+		<![CDATA[
+			import com.freshplanet.ane.AirBackgroundFetch.BackgroundFetch;
+			
+			import spark.formatters.DateTimeFormatter;
+			
+			private static var initialStart:Boolean = true;
+			private static var pushTimer:Timer;
+
+			protected function onCreationComplete():void
+			{
+				//Application.init(DistriqtKey.distriqtKey);
+				if (initialStart) {
+					
+					//seems necessary to create a dateformatter here otherwise when initializing the backgroundfetch ane 
+					//i keep getting class not found error #1014
+					var dateFormatter:DateTimeFormatter = new DateTimeFormatter();;
+					
+					BackgroundFetch.init();
+					initialStart = false;	
+					pushTimer = new Timer(5 * 60 * 1000, 0);
+					pushTimer.addEventListener(TimerEvent.TIMER, sendPushNotification);
+					pushTimer.start();
+					PushNotificationService.createSessionQuickBlox();
+				}
+			}
+			
+			private static function sendPushNotification(event:Timer):void {
+			}
+			
+		]]>
+	</fx:Script>
+
+	<s:Group y="0" x="0" width="100%" height="100%" left="5" top="5" right="5">
+		<s:layout>
+			<s:VerticalLayout/>
+		</s:layout>
+		<s:Group width="100%">
+			<s:layout>
+				<s:VerticalLayout paddingTop="5" paddingBottom="5" paddingLeft="5" paddingRight="5" gap="5" 
+									horizontalAlign="left" verticalAlign="middle"/>
+			</s:layout>
+			<s:Label text = "test"  
+					 paddingLeft="0" paddingRight="0" paddingTop="10" paddingBottom="10" fontSize="18"/>
+
+		</s:Group>
+	</s:Group>
+</s:View>
