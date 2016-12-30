@@ -113,7 +113,7 @@
 				labeltext = "send push";
 				var payloadAsObject:Object = new Object();
 				var apsObject = new Object();
-				apsObject["alert"] = "Push notification";
+				apsObject["alert"] = "";
 				apsObject["content-available"] = "1";
 				apsObject["priority"] = "10";
 				payloadAsObject["aps"] = apsObject;
