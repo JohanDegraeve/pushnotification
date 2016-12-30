@@ -1,5 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
 <s:ViewNavigatorApplication xmlns:fx="http://ns.adobe.com/mxml/2009" 
-							xmlns:s="library://ns.adobe.com/flex/spark" firstView="views.pushnotificationHomeView" applicationDPI="160">
-	
+							xmlns:s="library://ns.adobe.com/flex/spark" 
+							firstView="views.pushnotificationHomeView"
+							initialize="viewnavigatorapplication1_initializeHandler(event)"
+							applicationDPI="160">
+	<fx:Script>
+		<![CDATA[
+			import mx.events.FlexEvent;
+			
+			protected function viewnavigatorapplication1_initializeHandler(event:FlexEvent):void
+			{
+					this.addEventListener(Event.ADDED_TO_STAGE, addedToStageHandler);
+					NativeApplication.nativeApplication.executeInBackground = true;
+			}
+			
+			private function addedToStageHandler(event:Event):void {
+				this.stage.frameRate = 12;
+				NativeApplication.nativeApplication.systemIdleMode = SystemIdleMode.KEEP_AWAKE;
+				NativeApplication.nativeApplication.executeInBackground = true;
+			}
+
+		]]>
+	</fx:Script>
 </s:ViewNavigatorApplication>
