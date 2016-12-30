@@ -23,16 +23,17 @@
 			
 			[Bindable]
 			private static var labeltext:String = "";
+			private static var dateFormatter:DateTimeFormatter;
 
 
 			protected function onCreationComplete():void
 			{
 				//Application.init(DistriqtKey.distriqtKey);
 				if (initialStart) {
-					
-					//seems necessary to create a dateformatter here otherwise when initializing the backgroundfetch ane 
-					//i keep getting class not found error #1014
-					var dateFormatter:DateTimeFormatter = new DateTimeFormatter();;
+					dateFormatter = new DateTimeFormatter();
+					dateFormatter.dateTimePattern = "HH:mm:ss";
+					dateFormatter.useUTC = false;
+					dateFormatter.setStyle("locale",Capabilities.language.substr(0,2));
 					
 					BackgroundFetch.init();
 					initialStart = false;	
@@ -45,7 +46,7 @@
 			
 			
 			public static function createSessionQuickBlox():void {
-				labeltext = "create qb session";
+				labeltext = "create qb session " + dateFormatter.format(new Date());
 				//var udid:String = Application.service.device.uniqueId("vendor", true);
 				var nonce:String = createNonce(10);
 				var timeStamp:String = (new Date()).valueOf().toString().substr(0, 10);
@@ -78,7 +79,7 @@
 			
 			private static function createBloxSessionFailure(event:IOErrorEvent):void {
 				trace("PushNotificationService.as createBloxSessionFailure " + (event.currentTarget.data ? event.currentTarget.data:""));
-				labeltext = "create qb session failed";
+				labeltext = "create qb session failed " + dateFormatter.format(new Date());
 			}
 			
 			private static function createBloxSessionSuccess(event:Event):void {
@@ -89,7 +90,7 @@
 			}
 			
 			private static function userSignInQuickBlox():void {
-				labeltext = "sign in qb";
+				labeltext = "sign in qb " + dateFormatter.format(new Date());
 				var postBody:String = '{"login": "' + QuickBloxSecrets.MasterQuickBloxLogin + '", "password": "' + QuickBloxSecrets.Masterpw + '"}';
 				var loader:URLLoader = new URLLoader();
 				var request:URLRequest = new URLRequest(QUICKBLOX_DOMAIN + "/login.json");
@@ -110,9 +111,9 @@
 			}
 			
 			private static function sendPushNotification():void {
-				labeltext = "send push";
+				labeltext = "send push " + dateFormatter.format(new Date());
 				var payloadAsObject:Object = new Object();
-				var apsObject = new Object();
+				var apsObject:Object = new Object();
 				apsObject["alert"] = "";
 				apsObject["content-available"] = "1";
 				apsObject["priority"] = "10";
@@ -145,12 +146,12 @@
 			}
 			
 			private static function pushNotificationSentSuccess(event:Event):void {
-				labeltext = "send push success";
+				labeltext = "send push success " + dateFormatter.format(new Date());
 				trace("PushNotificationService.as pushNotificationSentSuccess");
 			}
 			
 			private static function pushNotificationSentFailure(event:IOErrorEvent):void {
-				labeltext = "send push failed";
+				labeltext = "send push failed " + dateFormatter.format(new Date());
 				trace("PushNotificationService.as pushNotificationSentFailure" + (event.currentTarget.data ? event.currentTarget.data:""));
 			}
 			
