@@ -3,10 +3,14 @@
 							xmlns:s="library://ns.adobe.com/flex/spark" 
 							firstView="views.pushnotificationHomeView"
 							initialize="viewnavigatorapplication1_initializeHandler(event)"
+							activate="viewnavigatorapplication1_activateHandler(event)"
 							applicationDPI="160">
+	<fx:Style source="assets/style.css"/>
 	<fx:Script>
 		<![CDATA[
 			import mx.events.FlexEvent;
+			
+			import views.pushnotificationHomeView;
 			
 			protected function viewnavigatorapplication1_initializeHandler(event:FlexEvent):void
 			{
@@ -20,6 +24,12 @@
 				NativeApplication.nativeApplication.executeInBackground = true;
 			}
 
+			protected function viewnavigatorapplication1_activateHandler(event:Event):void
+			{
+				trace("in viewnavigatorapplication1_activateHandler");
+				pushnotificationHomeView.startPushTimer();
+			}
+			
 		]]>
 	</fx:Script>
 </s:ViewNavigatorApplication>

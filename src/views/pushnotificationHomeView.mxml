@@ -24,7 +24,7 @@
 			[Bindable]
 			private static var labeltext:String = "";
 			private static var dateFormatter:DateTimeFormatter;
-
+			private static var tagBeginPushedTo:String = "";
 
 			protected function onCreationComplete():void
 			{
@@ -37,16 +37,34 @@
 					
 					BackgroundFetch.init();
 					initialStart = false;	
-					pushTimer = new Timer(5 * 60 * 1000, 0);
-					pushTimer.addEventListener(TimerEvent.TIMER, createSessionQuickBlox);
-					pushTimer.start();
 					createSessionQuickBlox();
 				}
 			}
 			
+			public static function startPushTimer():void {
+				trace("in startPushTimer");
+				if (pushTimer) {
+					if (pushTimer.running)
+						pushTimer.stop();
+				} 
+
+				var now:Date = new Date();
+				var year:Number = now.fullYear;
+				var month:Number = now.month;
+				var day:Number = now.day;
+				var hour:Number = now.hours;
+				var minute:Number = now.minutes;
+
+				//calculate next minute + 10 seconds
+				var fireDate:Date = new Date((new Date(year, month, day + 1, hour, minute, 0, 0)).valueOf() + (60 + 15) * 1000);
+				var diffInMs:Number = fireDate.valueOf() - now.valueOf();
+				pushTimer = new Timer(diffInMs, 1);
+				pushTimer.addEventListener(TimerEvent.TIMER, createSessionQuickBlox);
+				pushTimer.start();
+			}
 			
-			public static function createSessionQuickBlox():void {
-				labeltext = "create qb session " + dateFormatter.format(new Date());
+			public static function createSessionQuickBlox(event:TimerEvent = null):void {
+				labeltext = "create qb session "+ "\n" + dateFormatter.format(new Date());
 				//var udid:String = Application.service.device.uniqueId("vendor", true);
 				var nonce:String = createNonce(10);
 				var timeStamp:String = (new Date()).valueOf().toString().substr(0, 10);
@@ -79,7 +97,8 @@
 			
 			private static function createBloxSessionFailure(event:IOErrorEvent):void {
 				trace("PushNotificationService.as createBloxSessionFailure " + (event.currentTarget.data ? event.currentTarget.data:""));
-				labeltext = "create qb session failed " + dateFormatter.format(new Date());
+				labeltext = "create qb session failed "+ "\n" + dateFormatter.format(new Date());
+				startPushTimer();
 			}
 			
 			private static function createBloxSessionSuccess(event:Event):void {
@@ -90,7 +109,7 @@
 			}
 			
 			private static function userSignInQuickBlox():void {
-				labeltext = "sign in qb " + dateFormatter.format(new Date());
+				labeltext = "sign in qb "+ "\n" + dateFormatter.format(new Date());
 				var postBody:String = '{"login": "' + QuickBloxSecrets.MasterQuickBloxLogin + '", "password": "' + QuickBloxSecrets.Masterpw + '"}';
 				var loader:URLLoader = new URLLoader();
 				var request:URLRequest = new URLRequest(QUICKBLOX_DOMAIN + "/login.json");
@@ -111,7 +130,30 @@
 			}
 			
 			private static function sendPushNotification():void {
-				labeltext = "send push " + dateFormatter.format(new Date());
+				//calculate tag
+				var now:Date = new Date();
+				var minute:Number = now.minutesUTC;
+				var tagNumber:int = minute % 5;
+				tagBeginPushedTo = "ALL";
+				switch (tagNumber) {
+					case 0:
+						tagBeginPushedTo = "ONE";
+						break;
+					case 1:
+						tagBeginPushedTo = "TWO";
+						break;
+					case 2:
+						tagBeginPushedTo = "THREE";
+						break;
+					case 3:
+						tagBeginPushedTo = "FOUR";
+						break;
+					case 4:
+						tagBeginPushedTo = "FIVE";
+						break;
+				}
+				
+				labeltext = "send push for tag " + tagBeginPushedTo + " "+ "\n" + dateFormatter.format(new Date());
 				var payloadAsObject:Object = new Object();
 				var apsObject:Object = new Object();
 				apsObject["alert"] = "";
@@ -120,17 +162,10 @@
 				payloadAsObject["aps"] = apsObject;
 				
 				var payload:String = JSON.stringify(payloadAsObject);
-				/*var payload:String = "{" +
-					"aps =     {" + 
-					'"content-available" = 1;' + 
-					'"alert" = "";' +
-					'"priority" = 10;' +
-					'};' +
-					'}';*/
 				payload = Base64.encode(payload);
 				
 				var postBody:String = '{"event": {"notification_type": "push", "environment": "development", ' +
-					'"user": { "tags": { "any":"ALL"}}, ' +
+					'"user": { "tags": { "any":"' + tagBeginPushedTo + '"}}, ' +
 					'"message": "payload=' + payload + '", "push_type": "apns"}}';
 				
 				var loader:URLLoader = new URLLoader();
@@ -146,17 +181,23 @@
 			}
 			
 			private static function pushNotificationSentSuccess(event:Event):void {
-				labeltext = "send push success " + dateFormatter.format(new Date());
+				labeltext = "send push success for tag " + tagBeginPushedTo + " "+ "\n" + dateFormatter.format(new Date());
 				trace("PushNotificationService.as pushNotificationSentSuccess");
+				destroySession();
+				startPushTimer();
 			}
 			
 			private static function pushNotificationSentFailure(event:IOErrorEvent):void {
-				labeltext = "send push failed " + dateFormatter.format(new Date());
-				trace("PushNotificationService.as pushNotificationSentFailure" + (event.currentTarget.data ? event.currentTarget.data:""));
+				labeltext = "send push failed for tag " + tagBeginPushedTo + " "+ "\n" + dateFormatter.format(new Date());
+				trace("PushNotificationService.as pushNotificationSentFailure" + (event.currentTarget.data ? event.currentTarget.data:"" + ". This is probably because no device are subscribed to tag " + tagBeginPushedTo));
+				destroySession();
+				startPushTimer();
 			}
 			
 			private static function signInFailure(event:IOErrorEvent):void {
 				trace("PushNotificationService.as signInFailure " + (event.currentTarget.data ? event.currentTarget.data:""));
+				destroySession();
+				startPushTimer();
 			}
 			
 			public static function createNonce(length:int):String {
@@ -170,7 +211,25 @@
 				return returnValue;
 			}
 
+			private static function destroySession():void {
+				var loader:URLLoader = new URLLoader();
+				var request:URLRequest = new URLRequest(QUICKBLOX_DOMAIN + "/session.json");
+				request.method = URLRequestMethod.DELETE;					
+				request.requestHeaders.push(new URLRequestHeader("QuickBlox-REST-API-Version", QUICKBLOX_REST_API_VERSION));
+				request.requestHeaders.push(new URLRequestHeader("QB-Token", QB_Token));
+				request.contentType = "application/json";
+				loader.addEventListener(Event.COMPLETE, sessionDestroyed);
+				loader.addEventListener(IOErrorEvent.IO_ERROR, sessionDestroyFailure);
+				loader.load(request);
+			}
 			
+			private static function sessionDestroyed(event:Event):void  {
+				trace("BackGroundFetchService.as sessionDestroyed");
+			}
+			
+			private static function sessionDestroyFailure(event:Event):void  {
+				trace("BackGroundFetchService.as sessionDestroyFailure");
+			}
 		]]>
 	</fx:Script>
 
@@ -183,7 +242,7 @@
 				<s:VerticalLayout paddingTop="5" paddingBottom="5" paddingLeft="5" paddingRight="5" gap="5" 
 									horizontalAlign="left" verticalAlign="middle"/>
 			</s:layout>
-			<s:Label text = "{labeltext}"  
+			<s:Label text = "{labeltext}" lineBreak="explicit" maxDisplayedLines="2"
 					 paddingLeft="0" paddingRight="0" paddingTop="10" paddingBottom="10" fontSize="18"/>
 
 		</s:Group>

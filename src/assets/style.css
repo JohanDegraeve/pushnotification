@@ -1,0 +1,18 @@
+/* CSS file */
+@namespace s "library://ns.adobe.com/flex/spark";
+@namespace mx "library://ns.adobe.com/flex/mx";
+
+s|Application {
+	backgroundColor:#212121;
+	fontSize:18pt;
+} 
+
+s|ViewNavigatorApplication 
+{
+	backgroundColor:#212121;
+	color:#FFFFFF;
+}
+
+s|View {
+	backgroundAlpha: 0;
+}
